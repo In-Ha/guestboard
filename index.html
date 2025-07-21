@@ -34,12 +34,15 @@
   .actions button{padding:.45rem .9rem;font-size:.9rem;background:#444;color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
   .actions button.delete{background:#d32f2f}
   textarea.editArea{width:100%;min-height:120px;margin-top:.75rem;padding:.65rem;border:1px solid #bbb;border-radius:var(--radius)}
+  /* ===== 복사/드래그 방지 ===== */
+  body.nocopy, body.nocopy *{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
+  .selectable, .selectable *{user-select:text !important;-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important;}
 </style>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
-<body>
+<body class="nocopy">
   <h1>문의 게시판</h1>
   <form id="newPostForm">
     <input name="author" placeholder="성함을 입력해주세요" required />
