@@ -42,7 +42,7 @@
   <h1>문의 게시판</h1>
   <form id="newPostForm">
     <input name="author" placeholder="성함을 입력해주세요" required />
-    <input type="password" name="password" placeholder="비밀번호(작성글 확인 및 수정시 필요)" required />
+    <input type="password" name="password" placeholder="비밀번호(작성글 및 댓글 확인 시 필요합니다!)" required />
     <input name="title" placeholder="제목을 입력해주세요" required />
     <textarea name="content" required>상세내용은 작성자 및 관리자 외에는 블러처리됩니다.
 연락처:
@@ -64,7 +64,6 @@
 
   /* --------------------
      🔑 1) Firebase 설정
-     프로젝트 생성 후 아래 값을 실제 키로 교체하세요
      --------------------*/
   const firebaseConfig={
     apiKey:"YOUR_API_KEY",
@@ -77,7 +76,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db=firebase.database();
-  const postsRef=db.ref("guest_posts");  // 테이블 개념
+  const postsRef=db.ref("guest_posts");
 
   /* -------------------- 상수 --------------------*/
   const ADMIN_ID="plawjy";
@@ -86,9 +85,10 @@
   /* -------------------- DOM --------------------*/
   const bodyEl=document.getElementById("postsBody");
   const form=document.getElementById("newPostForm");
+  const templateText=`상세내용은 작성자 및 관리자 외에는 블러처리됩니다.\n연락처:\n희망 상담일:\n상세 내용:`;
 
   /* -------------------- 상태 --------------------*/
-  let posts={}; // {id:postObj, ...}
+  let posts={};
 
   /* -------------------- 렌더링 --------------------*/
   function render(){
@@ -130,7 +130,6 @@
     if(!row)return;
     const id=row.dataset.id;
 
-    // 이미 열려 있으면 토글
     if(row.nextSibling && row.nextSibling.classList.contains("detailsRow")){
       row.parentNode.removeChild(row.nextSibling);
       return;
@@ -192,7 +191,7 @@
     const data=new FormData(form);
     const now=Date.now();
     const newPost={
-      id:"", // push 후 키로 대체
+      id:"",
       author:data.get("author").trim(),
       password:data.get("password"),
       title:data.get("title").trim(),
@@ -200,18 +199,4 @@
       date:new Date(now).toLocaleString(),
       timestamp:now
     };
-    const newRef=postsRef.push();
-    newPost.id=newRef.key;
-    newRef.set(newPost);
-    form.reset();
-  });
-
-  /* -------------------- Firebase 실시간 리스너 --------------------*/
-  postsRef.on("value",snapshot=>{
-    posts=snapshot.val()||{};
-    render();
-  });
-})();
-</script>
-</body>
-</html>
+    const newRef=posts
