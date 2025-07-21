@@ -42,7 +42,7 @@
   <h1>문의 게시판</h1>
   <form id="newPostForm">
     <input name="author" placeholder="성함을 입력해주세요" required />
-    <input type="password" name="password" placeholder="비밀번호(작성글 및 댓글 확인 시 필요합니다!)" required />
+    <input type="password" name="password" placeholder="비밀번호(작성글 확인 및 수정 시 필요)" required />
     <input name="title" placeholder="제목을 입력해주세요" required />
     <textarea name="content" required>상세내용은 작성자 및 관리자 외에는 블러처리됩니다.
 연락처:
@@ -66,14 +66,14 @@
      🔑 1) Firebase 설정
      --------------------*/
   const firebaseConfig={
-    apiKey: "AIzaSyAi3pXIgLMFK4nUCRa9JmDTdDU2TRvu4rE",
-    authDomain: "guestboard-b1936.firebaseapp.com",
-    databaseURL: "https://guestboard-b1936-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "guestboard-b1936",
-    storageBucket: "guestboard-b1936.firebasestorage.app",
-    messagingSenderId: "924376997964",
-    appId: "1:924376997964:web:e787da2e04c3a3c8e8d4e9",
-    measurementId: "G-RRR41NGXTS"
+    apiKey:"AIzaSyAi3pXIgLMFK4nUCRa9JmDTdDU2TRvu4rE",
+    authDomain:"guestboard-b1936.firebaseapp.com",
+    databaseURL:"https://guestboard-b1936-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:"guestboard-b1936",
+    storageBucket:"guestboard-b1936.appspot.com",
+    messagingSenderId:"924376997964",
+    appId:"1:924376997964:web:e787da2e04c3a3c8e8d4e9",
+    measurementId:"G-RRR41NGXTS"
   };
   firebase.initializeApp(firebaseConfig);
   const db=firebase.database();
@@ -90,6 +90,11 @@
 
   /* -------------------- 상태 --------------------*/
   let posts={};
+
+  /* -------------------- 리스너 --------------------*/
+  postsRef.on("child_added",snap=>{ posts[snap.key]=snap.val(); render();});
+  postsRef.on("child_changed",snap=>{ posts[snap.key]=snap.val(); render();});
+  postsRef.on("child_removed",snap=>{ delete posts[snap.key]; render();});
 
   /* -------------------- 렌더링 --------------------*/
   function render(){
@@ -131,6 +136,7 @@
     if(!row)return;
     const id=row.dataset.id;
 
+    // 이미 열려 있으면 접기
     if(row.nextSibling && row.nextSibling.classList.contains("detailsRow")){
       row.parentNode.removeChild(row.nextSibling);
       return;
@@ -196,8 +202,4 @@
       author:data.get("author").trim(),
       password:data.get("password"),
       title:data.get("title").trim(),
-      content:data.get("content").trim(),
-      date:new Date(now).toLocaleString(),
-      timestamp:now
-    };
-    const newRef=posts
+      content:data.get("
