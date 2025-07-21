@@ -5,16 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>문의 게시판</title>
 <style>
-  :root{
-    --main:#0066ff;
-    --bg:#f5f5f5;
-    --text:#333;
-    --radius:8px;
-  }
+  :root{--main:#0066ff;--bg:#f5f5f5;--text:#333;--radius:8px;}
   *{box-sizing:border-box}
   body{margin:0;padding:2rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:var(--bg);color:var(--text)}
-  h1{text-align:center;margin:0 0 1rem 0;font-size:1.8rem}
-  form#newPostForm{display:grid;gap:.75rem;max-width:860px;margin:0 auto 2rem auto;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  h1{text-align:center;margin:0 0 1rem;font-size:1.8rem}
+  form#newPostForm{display:grid;gap:.75rem;max-width:860px;margin:0 auto 2rem;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
   form#newPostForm input,form#newPostForm textarea{padding:.6rem .8rem;border:1px solid #ccc;border-radius:var(--radius);font-size:.95rem;width:100%}
   form#newPostForm textarea{grid-column:1/-1;min-height:120px;resize:vertical}
   form#newPostForm button{grid-column:1/-1;padding:.75rem;border:none;border-radius:var(--radius);background:var(--main);color:#fff;font-size:1rem;cursor:pointer}
@@ -25,9 +20,12 @@
   tr.postRow:hover{background:#f9fbff}
   tr.detailsRow td{padding:0;background:#fafafa}
   .detail-wrapper{padding:1rem;border-top:1px solid #ddd;position:relative}
-  .blurred{filter:blur(6px);position:relative;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
-  .blurred::after{content:"";position:absolute;inset:0;pointer-events:auto;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;cursor:not-allowed;}
-  .blurred *, .blurred::before, .blurred::after{user-select:none;-webkit-user-select:none;-ms-user-select:none;}
+  /* 블러 및 복사 방지 */
+  .blurred, .blurred *{filter:blur(6px);user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;pointer-events:none;}
+  .blurred{position:relative;}
+  .blurred::after{content:"";position:absolute;inset:0;pointer-events:auto;cursor:not-allowed;user-select:none !important;-webkit-user-select:none !important;-moz-user-select:none !important;-ms-user-select:none !important;}
+  .selectable, .selectable *{user-select:text !important;-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important;}
+  body.nocopy, body.nocopy *{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
   .authArea{margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap}
   .authArea input{flex:1 1 180px;padding:.5rem;border:1px solid #ccc;border-radius:var(--radius)}
   .authArea button{padding:.55rem 1rem;background:var(--main);color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
@@ -35,198 +33,194 @@
   .actions button{padding:.45rem .9rem;font-size:.9rem;background:#444;color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
   .actions button.delete{background:#d32f2f}
   textarea.editArea{width:100%;min-height:120px;margin-top:.75rem;padding:.65rem;border:1px solid #bbb;border-radius:var(--radius)}
-  /* ===== 복사/드래그 방지 ===== */
-  body.nocopy, body.nocopy *{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
-  .selectable, .selectable *{user-select:text !important;-webkit-user-select:text !important;-moz-user-select:text !important;-ms-user-select:text !important;}
 </style>
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body class="nocopy">
-  <h1>문의 게시판</h1>
-  <form id="newPostForm">
-    <input name="author" placeholder="성함을 입력해주세요" required />
-    <input type="password" name="password" placeholder="비밀번호(작성글 확인 및 수정 시 필요)" required />
-    <input name="title" placeholder="제목을 입력해주세요" required />
-    <textarea name="content" required>상세내용은 작성자 및 관리자 외에는 블러처리됩니다.
+<h1>문의 게시판</h1>
+<form id="newPostForm">
+  <input name="author" placeholder="성함을 입력해주세요" required />
+  <input type="password" name="password" placeholder="비밀번호(작성글 확인 및 수정 시 필요)" required />
+  <input name="title" placeholder="제목을 입력해주세요" required />
+  <textarea name="content" required>상세내용은 작성자 및 관리자 외에는 블러처리됩니다.
 연락처:
 희망 상담일:
 상세 내용:</textarea>
-    <button type="submit">등록</button>
-  </form>
+  <button type="submit">등록</button>
+</form>
 
-  <table>
-    <thead>
-      <tr><th style="width:60px">번호</th><th>문의제목</th><th style="width:140px">작성자</th><th style="width:170px">작성일</th></tr>
-    </thead>
-    <tbody id="postsBody"></tbody>
-  </table>
+<table>
+  <thead>
+    <tr><th style="width:60px">번호</th><th>문의제목</th><th style="width:140px">작성자</th><th style="width:170px">작성일</th></tr>
+  </thead>
+  <tbody id="postsBody"></tbody>
+</table>
 
 <script>
 (function(){
-  "use strict";
+"use strict";
 
-  /* --------------------
-     🔑 1) Firebase 설정
-     --------------------*/
-  const firebaseConfig={
-    apiKey:"AIzaSyAi3pXIgLMFK4nUCRa9JmDTdDU2TRvu4rE",
-    authDomain:"guestboard-b1936.firebaseapp.com",
-    databaseURL:"https://guestboard-b1936-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId:"guestboard-b1936",
-    storageBucket:"guestboard-b1936.appspot.com",
-    messagingSenderId:"924376997964",
-    appId:"1:924376997964:web:e787da2e04c3a3c8e8d4e9",
-    measurementId:"G-RRR41NGXTS"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db=firebase.database();
-  const postsRef=db.ref("guest_posts");
+/* Firebase 설정 */
+const firebaseConfig={
+  apiKey:"AIzaSyAi3pXIgLMFK4nUCRa9JmDTdDU2TRvu4rE",
+  authDomain:"guestboard-b1936.firebaseapp.com",
+  databaseURL:"https://guestboard-b1936-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"guestboard-b1936",
+  storageBucket:"guestboard-b1936.appspot.com",
+  messagingSenderId:"924376997964",
+  appId:"1:924376997964:web:e787da2e04c3a3c8e8d4e9"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const postsRef = db.ref("guest_posts");
 
-  /* -------------------- 상수 --------------------*/
-  const ADMIN_ID="plawjy";
-  const ADMIN_PW="bmspjy88*";
+/* 상수 */
+const ADMIN_ID="plawjy";
+const ADMIN_PW="bmspjy88*";
 
-  /* -------------------- DOM --------------------*/
-  const bodyEl=document.getElementById("postsBody");
-  const form=document.getElementById("newPostForm");
-  const templateText=`상세내용은 작성자 및 관리자 외에는 블러처리됩니다.\n연락처:\n희망 상담일:\n상세 내용:`;
+/* DOM */
+const bodyEl=document.getElementById("postsBody");
+const form=document.getElementById("newPostForm");
+const templateText=`상세내용은 작성자 및 관리자 외에는 블러처리됩니다.\n연락처:\n희망 상담일:\n상세 내용:`;
 
-  /* -------------------- 상태 --------------------*/
-  let posts={};
+/* 전역 이벤트로 블러 영역 복사/선택 차단 */
+["copy","cut","dragstart","selectstart","contextmenu"].forEach(evt=>{
+  document.addEventListener(evt,e=>{
+    if(e.target.closest(".blurred")) e.preventDefault();
+  },true);
+});
 
-  /* -------------------- 리스너 --------------------*/
-  postsRef.on("child_added",snap=>{ posts[snap.key]=snap.val(); render();});
-  postsRef.on("child_changed",snap=>{ posts[snap.key]=snap.val(); render();});
-  postsRef.on("child_removed",snap=>{ delete posts[snap.key]; render();});
+/* 상태 */
+let posts={};
 
-  /* -------------------- 렌더링 --------------------*/
-  function render(){
-    bodyEl.innerHTML="";
-    const list=Object.values(posts).sort((a,b)=>b.timestamp-a.timestamp);
-    list.forEach((p,idx)=>{
-      const row=document.createElement("tr");
-      row.className="postRow";
-      row.dataset.id=p.id;
-      row.innerHTML=`<td>${list.length-idx}</td><td>${p.title}</td><td>${p.author}</td><td>${p.date}</td>`;
-      bodyEl.appendChild(row);
+/* 실시간 리스너 */
+postsRef.on("child_added",snap=>{ posts[snap.key]=snap.val(); render();});
+postsRef.on("child_changed",snap=>{ posts[snap.key]=snap.val(); render();});
+postsRef.on("child_removed",snap=>{ delete posts[snap.key]; render();});
+
+/* 렌더링 */
+function render(){
+  bodyEl.innerHTML="";
+  const list=Object.values(posts).sort((a,b)=>b.timestamp-a.timestamp);
+  list.forEach((p,idx)=>{
+    const row=document.createElement("tr");
+    row.className="postRow";
+    row.dataset.id=p.id;
+    row.innerHTML=`<td>${list.length-idx}</td><td>${p.title}</td><td>${p.author}</td><td>${p.date}</td>`;
+    bodyEl.appendChild(row);
+  });
+}
+
+/* 상세행 생성 */
+function createDetailsRow(post){
+  const det=document.createElement("tr");
+  det.className="detailsRow";
+  det.innerHTML=`<td colspan="4">
+    <div class="detail-wrapper">
+      <div class="contentArea blurred">${post.content.replace(/\n/g,"<br>")}</div>
+      <div class="authArea">
+        <input class="authName" placeholder="작성자명"/>
+        <input type="password" class="authPw" placeholder="비밀번호"/>
+        <button class="authBtn">확인</button>
+      </div>
+      <div class="actions">
+        <button class="edit">수정</button>
+        <button class="delete">삭제</button>
+      </div>
+    </div>
+  </td>`;
+  return det;
+}
+
+/* 게시글 클릭 */
+bodyEl.addEventListener("click",e=>{
+  const row=e.target.closest("tr.postRow");
+  if(!row)return;
+  const id=row.dataset.id;
+
+  if(row.nextSibling && row.nextSibling.classList.contains("detailsRow")){
+    row.parentNode.removeChild(row.nextSibling);
+    return;
+  }
+
+  const post=posts[id];
+  const detRow=createDetailsRow(post);
+  row.parentNode.insertBefore(detRow,row.nextSibling);
+
+  const wrapper=detRow.querySelector(".detail-wrapper");
+  const contentDiv=wrapper.querySelector(".contentArea");
+  const nameIn=wrapper.querySelector(".authName");
+  const pwIn=wrapper.querySelector(".authPw");
+  const authBtn=wrapper.querySelector(".authBtn");
+  const actions=wrapper.querySelector(".actions");
+
+  function unlock(){
+    contentDiv.classList.remove("blurred");
+    contentDiv.classList.add("selectable");
+    actions.style.display="flex";
+    wrapper.querySelector(".authArea").style.display="none";
+  }
+
+  authBtn.addEventListener("click",()=>{
+    const name=nameIn.value.trim();
+    const pw=pwIn.value;
+    if((name===post.author && pw===post.password) || (name===ADMIN_ID && pw===ADMIN_PW)){
+      unlock();
+    }else{
+      alert("작성자명 또는 비밀번호가 일치하지 않습니다.");
+    }
+  });
+
+  /* 삭제 */
+  actions.querySelector(".delete").addEventListener("click",()=>{
+    if(!confirm("정말 삭제하시겠습니까?"))return;
+    postsRef.child(post.id).remove();
+  });
+
+  /* 수정 */
+  actions.querySelector(".edit").addEventListener("click",()=>{
+    const editArea=document.createElement("textarea");
+    editArea.className="editArea";
+    editArea.value=post.content;
+    contentDiv.replaceWith(editArea);
+    actions.style.display="none";
+    const saveBtn=document.createElement("button");
+    saveBtn.textContent="저장";
+    saveBtn.style="margin-top:.75rem;padding:.5rem 1rem;background:var(--main);color:#fff;border:none;border-radius:var(--radius);cursor:pointer";
+    editArea.after(saveBtn);
+    saveBtn.addEventListener("click",()=>{
+      postsRef.child(post.id).update({content:editArea.value});
     });
-  }
+  });
+});
 
-  /* -------------------- 상세행 생성 --------------------*/
-  function createDetailsRow(post){
-    const det=document.createElement("tr");
-    det.className="detailsRow";
-    det.innerHTML=`<td colspan="4">
-        <div class="detail-wrapper">
-          <div class="contentArea blurred">${post.content.replace(/\n/g,"<br>")}</div>
-          <div class="authArea">
-            <input class="authName" placeholder="작성자명"/>
-            <input type="password" class="authPw" placeholder="비밀번호"/>
-            <button class="authBtn">확인</button>
-          </div>
-          <div class="actions">
-            <button class="edit">수정</button>
-            <button class="delete">삭제</button>
-          </div>
-        </div>
-      </td>`;
-    return det;
-  }
-
-  /* -------------------- 게시글 클릭 --------------------*/
-  bodyEl.addEventListener("click",e=>{
-    const row=e.target.closest("tr.postRow");
-    if(!row)return;
-    const id=row.dataset.id;
-
-    // 이미 열려 있으면 접기
-    if(row.nextSibling && row.nextSibling.classList.contains("detailsRow")){
-      row.parentNode.removeChild(row.nextSibling);
+/* 새 글 등록 */
+form.addEventListener("submit",e=>{
+  e.preventDefault();
+  const data=new FormData(form);
+  const now=Date.now();
+  const newPost={
+    id:"",
+    author:data.get("author").trim(),
+    password:data.get("password"),
+    title:data.get("title").trim(),
+    content:data.get("content").trim(),
+    date:new Date(now).toLocaleString(),
+    timestamp:now
+  };
+  const newRef=postsRef.push();
+  newPost.id=newRef.key;
+  newRef.set(newPost,err=>{
+    if(err){
+      alert("⚠️ 저장 실패: "+err.message);
       return;
     }
-
-    const post=posts[id];
-    const detRow=createDetailsRow(post);
-    row.parentNode.insertBefore(detRow,row.nextSibling);
-
-    const wrapper=detRow.querySelector(".detail-wrapper");
-    const contentDiv=wrapper.querySelector(".contentArea");
-    const nameIn=wrapper.querySelector(".authName");
-    const pwIn=wrapper.querySelector(".authPw");
-    const authBtn=wrapper.querySelector(".authBtn");
-    const actions=wrapper.querySelector(".actions");
-
-    function unlock(){
-      contentDiv.classList.remove("blurred");
-      actions.style.display="flex";
-      wrapper.querySelector(".authArea").style.display="none";
-    }
-
-    authBtn.addEventListener("click",()=>{
-      const name=nameIn.value.trim();
-      const pw=pwIn.value;
-      if((name===post.author && pw===post.password) || (name===ADMIN_ID && pw===ADMIN_PW)){
-        unlock();
-      }else{
-        alert("작성자명 또는 비밀번호가 일치하지 않습니다.");
-      }
-    });
-
-    /* -------- 삭제 --------*/
-    actions.querySelector(".delete").addEventListener("click",()=>{
-      if(!confirm("정말 삭제하시겠습니까?"))return;
-      postsRef.child(post.id).remove();
-    });
-
-    /* -------- 수정 --------*/
-    actions.querySelector(".edit").addEventListener("click",()=>{
-      const editArea=document.createElement("textarea");
-      editArea.className="editArea";
-      editArea.value=post.content;
-      contentDiv.replaceWith(editArea);
-      actions.style.display="none";
-      const saveBtn=document.createElement("button");
-      saveBtn.textContent="저장";
-      saveBtn.style="margin-top:.75rem;padding:.5rem 1rem;background:var(--main);color:#fff;border:none;border-radius:var(--radius);cursor:pointer";
-      editArea.after(saveBtn);
-      saveBtn.addEventListener("click",()=>{
-        postsRef.child(post.id).update({content:editArea.value});
-      });
-    });
+    alert("게시글이 등록되었습니다.");
+    form.reset();
+    form.content.value=templateText;
   });
-
-  /* -------------------- 새 글 등록 --------------------*/
-  form.addEventListener("submit",e=>{
-    e.preventDefault();
-    const data=new FormData(form);
-    const now=Date.now();
-    const newPost={
-      id:"",
-      author:data.get("author").trim(),
-      password:data.get("password"),
-      title:data.get("title").trim(),
-      content:data.get("content").trim(),
-      date:new Date(now).toLocaleString(),
-      timestamp:now
-    };
-
-    // ① DB 새 노드 생성
-    const newRef=postsRef.push();
-    newPost.id=newRef.key;
-
-    // ② 저장 + 콜백에서 성공 여부 확인
-    newRef.set(newPost,err=>{
-      if(err){
-        alert("⚠️ 저장 실패: "+err.message);
-        return;
-      }
-      alert("게시글이 등록되었습니다.");
-      form.reset();
-      form.content.value=templateText;
-    });
-  });
+});
 })();
 </script>
 </body>
