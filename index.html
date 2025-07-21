@@ -202,4 +202,27 @@
       author:data.get("author").trim(),
       password:data.get("password"),
       title:data.get("title").trim(),
-      content:data.get("
+      content:data.get("content").trim(),
+      date:new Date(now).toLocaleString(),
+      timestamp:now
+    };
+
+    // ① DB 새 노드 생성
+    const newRef=postsRef.push();
+    newPost.id=newRef.key;
+
+    // ② 저장 + 콜백에서 성공 여부 확인
+    newRef.set(newPost,err=>{
+      if(err){
+        alert("⚠️ 저장 실패: "+err.message);
+        return;
+      }
+      alert("게시글이 등록되었습니다.");
+      form.reset();
+      form.content.value=templateText;
+    });
+  });
+})();
+</script>
+</body>
+</html>
