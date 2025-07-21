@@ -34,12 +34,15 @@
   .actions button.delete{background:#d32f2f}
   textarea.editArea{width:100%;min-height:120px;margin-top:.75rem;padding:.65rem;border:1px solid #bbb;border-radius:var(--radius)}
 </style>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>문의 게시판</h1>
   <form id="newPostForm">
     <input name="author" placeholder="성함을 입력해주세요" required />
-    <input type="password" name="password" placeholder="비밀번호(작성글 및 댓글 확인 시 필요!)" required />
+    <input type="password" name="password" placeholder="비밀번호(작성글 및 댓글 확인 시 필요합니다!)" required />
     <input name="title" placeholder="제목을 입력해주세요" required />
     <textarea name="content" placeholder="내용을 입력해주세요" required></textarea>
     <button type="submit">등록</button>
@@ -56,26 +59,48 @@
 (function(){
   "use strict";
 
+  /* --------------------
+     🔑 1) Firebase 설정
+     프로젝트 생성 후 아래 값을 실제 키로 교체하세요
+     --------------------*/
+  const firebaseConfig={
+    apiKey:"YOUR_API_KEY",
+    authDomain:"YOUR_PROJECT_ID.firebaseapp.com",
+    databaseURL:"https://YOUR_PROJECT_ID-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:"YOUR_PROJECT_ID",
+    storageBucket:"YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId:"SENDER_ID",
+    appId:"APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db=firebase.database();
+  const postsRef=db.ref("guest_posts");  // 테이블 개념
+
+  /* -------------------- 상수 --------------------*/
   const ADMIN_ID="plawjy";
   const ADMIN_PW="bmspjy88*";
+
+  /* -------------------- DOM --------------------*/
   const bodyEl=document.getElementById("postsBody");
   const form=document.getElementById("newPostForm");
 
-  let posts = JSON.parse(localStorage.getItem("guest_posts")||"[]");
+  /* -------------------- 상태 --------------------*/
+  let posts={}; // {id:postObj, ...}
 
-  function save(){localStorage.setItem("guest_posts",JSON.stringify(posts));}
-
+  /* -------------------- 렌더링 --------------------*/
   function render(){
     bodyEl.innerHTML="";
-    posts.slice().reverse().forEach((p,idx)=>{
+    const list=Object.values(posts).sort((a,b)=>b.timestamp-a.timestamp);
+    list.forEach((p,idx)=>{
       const row=document.createElement("tr");
       row.className="postRow";
       row.dataset.id=p.id;
-      row.innerHTML=`<td>${posts.length-idx}</td><td>${p.title}</td><td>${p.author}</td><td>${p.date}</td>`;
+      row.innerHTML=`<td>${list.length-idx}</td><td>${p.title}</td><td>${p.author}</td><td>${p.date}</td>`;
       bodyEl.appendChild(row);
     });
   }
 
+  /* -------------------- 상세행 생성 --------------------*/
   function createDetailsRow(post){
     const det=document.createElement("tr");
     det.className="detailsRow";
@@ -96,16 +121,19 @@
     return det;
   }
 
+  /* -------------------- 게시글 클릭 --------------------*/
   bodyEl.addEventListener("click",e=>{
     const row=e.target.closest("tr.postRow");
     if(!row)return;
     const id=row.dataset.id;
-    // toggle existing details
+
+    // 이미 열려 있으면 토글
     if(row.nextSibling && row.nextSibling.classList.contains("detailsRow")){
       row.parentNode.removeChild(row.nextSibling);
       return;
     }
-    const post=posts.find(p=>p.id===id);
+
+    const post=posts[id];
     const detRow=createDetailsRow(post);
     row.parentNode.insertBefore(detRow,row.nextSibling);
 
@@ -132,15 +160,13 @@
       }
     });
 
-    // delete
+    /* -------- 삭제 --------*/
     actions.querySelector(".delete").addEventListener("click",()=>{
       if(!confirm("정말 삭제하시겠습니까?"))return;
-      posts=posts.filter(p=>p.id!==post.id);
-      save();
-      render();
+      postsRef.child(post.id).remove();
     });
 
-    // edit
+    /* -------- 수정 --------*/
     actions.querySelector(".edit").addEventListener("click",()=>{
       const editArea=document.createElement("textarea");
       editArea.className="editArea";
@@ -152,34 +178,36 @@
       saveBtn.style="margin-top:.75rem;padding:.5rem 1rem;background:var(--main);color:#fff;border:none;border-radius:var(--radius);cursor:pointer";
       editArea.after(saveBtn);
       saveBtn.addEventListener("click",()=>{
-        post.content=editArea.value;
-        save();
-        render();
-        // reopen same post
-        const newRow=[...bodyEl.querySelectorAll("tr.postRow")].find(r=>r.dataset.id===post.id);
-        if(newRow)newRow.click();
+        postsRef.child(post.id).update({content:editArea.value});
       });
     });
   });
 
+  /* -------------------- 새 글 등록 --------------------*/
   form.addEventListener("submit",e=>{
     e.preventDefault();
     const data=new FormData(form);
+    const now=Date.now();
     const newPost={
-      id:Date.now().toString(),
+      id:"", // push 후 키로 대체
       author:data.get("author").trim(),
       password:data.get("password"),
       title:data.get("title").trim(),
       content:data.get("content").trim(),
-      date:new Date().toLocaleString()
+      date:new Date(now).toLocaleString(),
+      timestamp:now
     };
-    posts.push(newPost);
-    save();
+    const newRef=postsRef.push();
+    newPost.id=newRef.key;
+    newRef.set(newPost);
     form.reset();
-    render();
   });
 
-  render();
+  /* -------------------- Firebase 실시간 리스너 --------------------*/
+  postsRef.on("value",snapshot=>{
+    posts=snapshot.val()||{};
+    render();
+  });
 })();
 </script>
 </body>
