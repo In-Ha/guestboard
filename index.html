@@ -33,6 +33,11 @@
   .actions button{padding:.45rem .9rem;font-size:.9rem;background:#444;color:#fff;border:none;border-radius:var(--radius);cursor:pointer}
   .actions button.delete{background:#d32f2f}
   textarea.editArea{width:100%;min-height:120px;margin-top:.75rem;padding:.65rem;border:1px solid #bbb;border-radius:var(--radius)}
+  /* -- Responsive Font Sizing -- */
+  html{font-size:100%;}
+  @media (max-width:600px){
+    html{font-size:75%;} /* 약 3pt 감소 (16px→12px) */
+  }
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
